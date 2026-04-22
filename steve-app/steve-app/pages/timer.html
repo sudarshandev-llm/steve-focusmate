@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Steve – Timer</title>
+<link rel="stylesheet" href="../css/style.css"/>
+<style>
+.scroll-body { overflow-y:auto; flex:1; padding-bottom:90px; }
+.timer-hero {
+  display:flex; flex-direction:column; align-items:center;
+  padding:2rem 1.5rem 1rem;
+}
+.ring-wrap {
+  position:relative; width:240px; height:240px; margin:1rem auto;
+}
+svg.ring { transform:rotate(-90deg); }
+circle.track { fill:none; stroke:var(--border); stroke-width:12; }
+circle.prog  { fill:none; stroke-width:12; stroke-linecap:round; transition:stroke-dashoffset .9s linear, stroke .3s; }
+.ring-inner {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+.timer-display { font-size:3rem; font-weight:900; font-family:var(--mono); letter-spacing:-.02em; }
+.timer-label   { font-size:.8rem; color:var(--text2); font-weight:700; text-transform:uppercase; letter-spacing:.1em; margin-top:4px; }
+.mode-row { display:flex; gap:8px; margin-bottom:1.5rem; }
+.mode-pill { padding:.5rem 1.1rem; border-radius:99px; font-size:.82rem; font-weight:700; border:1px solid var(--border2); background:var(--surface); color:var(--text2); cursor:pointer; transition:all .2s; }
+.mode-pill.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.control-row { display:flex; gap:12px; margin-top:1.5rem; }
+.ctrl-btn {
+  width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:1.2rem; transition:all .22s; cursor:pointer; border:1px solid var(--border2);
+}
+.ctrl-btn.main { width:72px; height:72px; background:linear-gradient(135deg,var(--accent),#8b5cf6); border:none; font-size:1.5rem; box-shadow:0 8px 24px rgba(108,99,255,.35); }
+.ctrl-btn.main:hover { transform:scale(1.07); box-shadow:0 12px 36px rgba(108,99,255,.5); }
+.ctrl-btn.sec  { background:var(--surface2); }
+.ctrl-btn.sec:hover { background:var(--surface3); }
+.preset-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 1rem 1rem; }
+.preset-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:.9rem .7rem; text-align:center; cursor:pointer; transition:all .2s; }
+.preset-card:hover { border-color:var(--accent); background:var(--surface2); }
+.preset-card.active { border-color:var(--accent); background:rgba(108,99,255,.12); }
+.preset-min  { font-size:1.4rem; font-weight:900; }
+.preset-name { font-size:.72rem; color:var(--text2); font-weight:700; margin-top:2px; }
+.custom-row  { display:flex; gap:10px; margin:0 1rem 1rem; align-items:center; }
+.sessions-section { margin:0 1rem; }
+.session-item { display:flex; justify-content:space-between; align-items:center; padding:.75rem 0; border-bottom:1px solid var(--border); }
+.session-item:last-child { border-bottom:none; }
+.s-name { font-weight:700; font-size:.9rem; }
+.s-time { font-size:.8rem; color:var(--text2); }
+.s-dur  { font-size:.85rem; font-weight:700; color:var(--accent2); }
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+<div class="page-wrap" style="display:flex;flex-direction:column;min-height:100vh">
+  <div class="topbar">
+    <div><div class="topbar-title">Focus Timer</div><div class="topbar-sub">Stay in the zone</div></div>
+  </div>
+
+  <div class="scroll-body">
+    <!-- Mode tabs -->
+    <div class="timer-hero">
+      <div class="mode-row">
+        <button class="mode-pill active" onclick="setMode('focus')">🧠 Focus</button>
+        <button class="mode-pill" onclick="setMode('short')">☕ Short Break</button>
+        <button class="mode-pill" onclick="setMode('long')">🌿 Long Break</button>
+      </div>
+
+      <!-- Ring -->
+      <div class="ring-wrap">
+        <svg class="ring" width="240" height="240" viewBox="0 0 240 240">
+          <circle class="track" cx="120" cy="120" r="104"/>
+          <circle class="prog"  cx="120" cy="120" r="104" id="ring-prog"
+            stroke="url(#grad)" stroke-dasharray="653" stroke-dashoffset="0"/>
+          <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#6c63ff"/>
+              <stop offset="100%" stop-color="#38bdf8"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="ring-inner">
+          <div class="timer-display" id="timer-display">25:00</div>
+          <div class="timer-label"  id="timer-label">Focus Session</div>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <button class="ctrl-btn sec" onclick="resetTimer()" title="Reset">↺</button>
+        <button class="ctrl-btn main" id="play-btn" onclick="toggleTimer()">▶</button>
+        <button class="ctrl-btn sec" onclick="skipTimer()" title="Skip">⏭</button>
+      </div>
+    </div>
+
+    <!-- Presets -->
+    <div class="section-label">Presets</div>
+    <div class="preset-grid" id="preset-grid">
+      <div class="preset-card active" onclick="selectPreset(25,'Pomodoro')">
+        <div class="preset-min">25</div>
+        <div class="preset-name">Pomodoro</div>
+      </div>
+      <div class="preset-card" onclick="selectPreset(45,'Deep Work')">
+        <div class="preset-min">45</div>
+        <div class="preset-name">Deep Work</div>
+      </div>
+      <div class="preset-card" onclick="selectPreset(60,'Power Hour')">
+        <div class="preset-min">60</div>
+        <div class="preset-name">Power Hour</div>
+      </div>
+      <div class="preset-card" onclick="selectPreset(90,'Flow State')">
+        <div class="preset-min">90</div>
+        <div class="preset-name">Flow State</div>
+      </div>
+      <div class="preset-card" onclick="selectPreset(5,'Short Break')">
+        <div class="preset-min">5</div>
+        <div class="preset-name">Short Break</div>
+      </div>
+      <div class="preset-card" onclick="selectPreset(15,'Long Break')">
+        <div class="preset-min">15</div>
+        <div class="preset-name">Long Break</div>
+      </div>
+    </div>
+
+    <!-- Custom -->
+    <div class="section-label" style="margin-top:1rem">Custom Duration</div>
+    <div class="custom-row">
+      <input class="input-field" id="custom-min" type="number" min="1" max="300" placeholder="Minutes" style="max-width:120px"/>
+      <input class="input-field" id="custom-name" type="text" placeholder="Session name (optional)" style="flex:1"/>
+      <button class="btn btn-ghost" onclick="applyCustom()" style="white-space:nowrap">Set</button>
+    </div>
+
+    <!-- Session log -->
+    <div class="section-label" style="margin-top:1rem">Today's Sessions</div>
+    <div class="sessions-section card-sm" style="margin:0 1rem 1rem;" id="session-log">
+      <div class="empty-state" style="padding:1.2rem 0">No sessions yet. Start your first focus session!</div>
+    </div>
+  </div>
+
+  <nav class="nav" id="main-nav"></nav>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+requireAuth();
+
+const CIRC = 2 * Math.PI * 104;
+let totalSecs = 25 * 60;
+let remaining = totalSecs;
+let running   = false;
+let interval  = null;
+let sessionName = 'Focus Session';
+let currentMode = 'focus';
+
+const MODES = {
+  focus: { secs: 25*60, label:'Focus Session', color:'url(#grad)' },
+  short: { secs: 5*60,  label:'Short Break',   color:'#34d399' },
+  long:  { secs: 15*60, label:'Long Break',    color:'#f472b6' },
+};
+
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.mode-pill').forEach((p,i)=>p.classList.toggle('active', ['focus','short','long'][i]===m));
+  const cfg = MODES[m];
+  totalSecs = cfg.secs;
+  remaining = totalSecs;
+  sessionName = cfg.label;
+  running = false; clearInterval(interval);
+  document.getElementById('play-btn').textContent = '▶';
+  document.getElementById('ring-prog').style.stroke = cfg.color;
+  updateDisplay();
+}
+
+function selectPreset(mins, name) {
+  document.querySelectorAll('.preset-card').forEach(c=>c.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  totalSecs = mins * 60; remaining = totalSecs; sessionName = name;
+  running = false; clearInterval(interval);
+  document.getElementById('play-btn').textContent = '▶';
+  updateDisplay();
+}
+
+function applyCustom() {
+  const m = parseInt(document.getElementById('custom-min').value);
+  const n = document.getElementById('custom-name').value.trim() || 'Custom Session';
+  if (!m || m < 1) { notify('Invalid', 'Enter a valid minute count'); return; }
+  totalSecs = m * 60; remaining = totalSecs; sessionName = n;
+  running = false; clearInterval(interval);
+  document.getElementById('play-btn').textContent = '▶';
+  updateDisplay();
+  notify('Custom set!', `${m} min • ${n}`);
+}
+
+function updateDisplay() {
+  const m = Math.floor(remaining / 60).toString().padStart(2,'0');
+  const s = (remaining % 60).toString().padStart(2,'0');
+  document.getElementById('timer-display').textContent = `${m}:${s}`;
+  document.getElementById('timer-label').textContent   = sessionName;
+  const pct = (totalSecs - remaining) / totalSecs;
+  document.getElementById('ring-prog').style.strokeDashoffset = CIRC * (1 - pct);
+}
+
+function toggleTimer() {
+  if (running) {
+    clearInterval(interval); running = false;
+    document.getElementById('play-btn').textContent = '▶';
+  } else {
+    running = true;
+    document.getElementById('play-btn').textContent = '⏸';
+    interval = setInterval(() => {
+      remaining--;
+      updateDisplay();
+      if (remaining <= 0) {
+        clearInterval(interval); running = false;
+        document.getElementById('play-btn').textContent = '▶';
+        const mins = Math.round(totalSecs / 60);
+        logSession(sessionName, mins);
+        notify('Session done! 🎉', `You completed ${mins} min of ${sessionName}`);
+      }
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(interval); running = false;
+  remaining = totalSecs;
+  document.getElementById('play-btn').textContent = '▶';
+  updateDisplay();
+}
+
+function skipTimer() {
+  clearInterval(interval); running = false;
+  remaining = 0; updateDisplay();
+  document.getElementById('play-btn').textContent = '▶';
+  notify('Skipped', 'Session skipped');
+}
+
+function logSession(name, mins) {
+  const sessions = Store.get('sessions', []);
+  sessions.unshift({ name, mins, time: new Date().toISOString() });
+  Store.set('sessions', sessions.slice(0, 30));
+  const total = Store.get('focus_minutes', 0);
+  if (currentMode === 'focus') Store.set('focus_minutes', total + mins);
+  renderSessions();
+}
+
+function renderSessions() {
+  const today = new Date().toDateString();
+  const sessions = Store.get('sessions', []).filter(s => new Date(s.time).toDateString() === today);
+  const el = document.getElementById('session-log');
+  if (!sessions.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:1.2rem 0">No sessions yet. Start your first focus session!</div>';
+    return;
+  }
+  el.innerHTML = sessions.map(s => `
+    <div class="session-item">
+      <div><div class="s-name">${s.name}</div><div class="s-time">${fmtTime(s.time)}</div></div>
+      <div class="s-dur">${s.mins} min</div>
+    </div>`).join('');
+}
+
+updateDisplay();
+renderSessions();
+</script>
+</body>
+</html>

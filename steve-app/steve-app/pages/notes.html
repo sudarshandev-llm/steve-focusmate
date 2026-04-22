@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Steve – Notes</title>
+<link rel="stylesheet" href="../css/style.css"/>
+<style>
+.scroll-body { overflow-y:auto; flex:1; padding-bottom:90px; }
+.search-row { padding:0 1rem .75rem; }
+.search-wrap { position:relative; }
+.search-wrap input { padding-left:2.5rem; }
+.search-icon { position:absolute; left:.9rem; top:50%; transform:translateY(-50%); color:var(--text3); font-size:.95rem; pointer-events:none; }
+.cat-scroll { display:flex; gap:8px; overflow-x:auto; padding:0 1rem .75rem; scrollbar-width:none; }
+.cat-scroll::-webkit-scrollbar { display:none; }
+.cat-chip { flex-shrink:0; padding:.45rem 1rem; border-radius:99px; font-size:.8rem; font-weight:700; border:1px solid var(--border2); background:var(--surface); color:var(--text2); cursor:pointer; transition:all .2s; white-space:nowrap; }
+.cat-chip.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.notes-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 1rem 1rem; }
+.note-card {
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--r);
+  padding:1rem; cursor:pointer; transition:all .2s; position:relative; overflow:hidden;
+}
+.note-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--note-color,var(--accent)); }
+.note-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.3); }
+.note-title  { font-weight:800; font-size:.88rem; margin-bottom:.4rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.note-body   { font-size:.78rem; color:var(--text2); line-height:1.5; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.note-footer { display:flex; justify-content:space-between; align-items:center; margin-top:.6rem; }
+.note-cat    { font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--text3); }
+.note-date   { font-size:.65rem; color:var(--text3); }
+.note-del    { position:absolute; top:.5rem; right:.5rem; font-size:.75rem; color:var(--text3); cursor:pointer; padding:2px 5px; border-radius:4px; }
+.note-del:hover { color:var(--red); background:rgba(248,113,113,.12); }
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:200; display:flex; align-items:flex-end; justify-content:center; animation:fadeIn .2s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal-sheet {
+  width:100%; max-width:520px; background:var(--bg2); border-radius:var(--r2) var(--r2) 0 0;
+  padding:1.5rem; max-height:90vh; overflow-y:auto;
+  animation:sheetUp .3s cubic-bezier(.34,1.45,.64,1) both;
+}
+@keyframes sheetUp { from{transform:translateY(100%)} to{transform:none} }
+.modal-handle { width:40px; height:4px; background:var(--border2); border-radius:2px; margin:0 auto 1.2rem; }
+.modal-title  { font-size:1.1rem; font-weight:800; margin-bottom:1rem; }
+.color-picker { display:flex; gap:8px; flex-wrap:wrap; margin:.5rem 0 1rem; }
+.cp { width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:.2s; }
+.cp.selected { border-color:#fff; transform:scale(1.2); }
+.cat-grid { display:flex; gap:6px; flex-wrap:wrap; margin:.5rem 0 1rem; }
+.cat-opt { padding:.35rem .85rem; border-radius:99px; font-size:.78rem; font-weight:700; border:1px solid var(--border2); background:var(--surface); color:var(--text2); cursor:pointer; transition:all .2s; }
+.cat-opt.selected { background:var(--accent); border-color:var(--accent); color:#fff; }
+textarea.note-input { width:100%; min-height:140px; resize:vertical; background:var(--surface); border:1px solid var(--border2); border-radius:var(--r3); padding:.85rem 1rem; color:var(--text); font-size:.92rem; line-height:1.6; }
+.fab {
+  position:fixed; bottom:85px; right:20px; width:58px; height:58px; border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; box-shadow:0 8px 28px rgba(108,99,255,.4);
+  cursor:pointer; z-index:50; transition:all .22s;
+}
+.fab:hover { transform:scale(1.1) rotate(10deg); }
+.empty-state { text-align:center; padding:3rem 1rem; color:var(--text3); grid-column:1/-1; }
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+<div class="page-wrap" style="display:flex;flex-direction:column;min-height:100vh">
+  <div class="topbar">
+    <div><div class="topbar-title">Notes</div><div class="topbar-sub" id="note-count">0 notes</div></div>
+  </div>
+
+  <div class="scroll-body">
+    <div class="search-row">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="input-field" id="search" placeholder="Search notes..." oninput="renderNotes()"/>
+      </div>
+    </div>
+
+    <div class="cat-scroll" id="cat-filter">
+      <div class="cat-chip active" data-cat="All" onclick="selectCat(this)">All</div>
+      <div class="cat-chip" data-cat="Study" onclick="selectCat(this)">📚 Study</div>
+      <div class="cat-chip" data-cat="Ideas" onclick="selectCat(this)">💡 Ideas</div>
+      <div class="cat-chip" data-cat="Todo" onclick="selectCat(this)">✅ Todo</div>
+      <div class="cat-chip" data-cat="Personal" onclick="selectCat(this)">🌸 Personal</div>
+      <div class="cat-chip" data-cat="Class" onclick="selectCat(this)">🏫 Class</div>
+    </div>
+
+    <div class="notes-grid" id="notes-grid"></div>
+  </div>
+
+  <div class="fab" onclick="openModal()">+</div>
+  <nav class="nav" id="main-nav"></nav>
+</div>
+
+<!-- New Note Modal -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="closeIfBg(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">New Note</div>
+    <div class="form-group">
+      <label>Title</label>
+      <input class="input-field" id="n-title" placeholder="Note title"/>
+    </div>
+    <div class="form-group">
+      <label>Content</label>
+      <textarea class="note-input" id="n-body" placeholder="Write your note here..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <div class="cat-grid">
+        <div class="cat-opt selected" data-c="Study" onclick="selCat(this)">📚 Study</div>
+        <div class="cat-opt" data-c="Ideas" onclick="selCat(this)">💡 Ideas</div>
+        <div class="cat-opt" data-c="Todo" onclick="selCat(this)">✅ Todo</div>
+        <div class="cat-opt" data-c="Personal" onclick="selCat(this)">🌸 Personal</div>
+        <div class="cat-opt" data-c="Class" onclick="selCat(this)">🏫 Class</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Colour</label>
+      <div class="color-picker" id="color-picker">
+        <div class="cp selected" data-col="#6c63ff" style="background:#6c63ff" onclick="selColor(this)"></div>
+        <div class="cp" data-col="#34d399" style="background:#34d399" onclick="selColor(this)"></div>
+        <div class="cp" data-col="#fbbf24" style="background:#fbbf24" onclick="selColor(this)"></div>
+        <div class="cp" data-col="#f472b6" style="background:#f472b6" onclick="selColor(this)"></div>
+        <div class="cp" data-col="#38bdf8" style="background:#38bdf8" onclick="selColor(this)"></div>
+        <div class="cp" data-col="#f87171" style="background:#f87171" onclick="selColor(this)"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:.5rem">
+      <button class="btn btn-ghost" onclick="closeModal()" style="flex:1">Cancel</button>
+      <button class="btn btn-grad" onclick="saveNote()" style="flex:1">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+requireAuth();
+
+let filterCat = 'All';
+let editId = null;
+let selColorVal = '#6c63ff';
+let selCatVal   = 'Study';
+
+function selectCat(el) {
+  document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  filterCat = el.dataset.cat;
+  renderNotes();
+}
+function selCat(el) {
+  document.querySelectorAll('.cat-opt').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selCatVal = el.dataset.c;
+}
+function selColor(el) {
+  document.querySelectorAll('.cp').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selColorVal = el.dataset.col;
+}
+
+function renderNotes() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let notes = Store.get('notes', []);
+  if (filterCat !== 'All') notes = notes.filter(n => n.cat === filterCat);
+  if (q) notes = notes.filter(n => n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q));
+  document.getElementById('note-count').textContent = Store.get('notes', []).length + ' notes';
+  const grid = document.getElementById('notes-grid');
+  if (!notes.length) {
+    grid.innerHTML = '<div class="empty-state">No notes yet.<br/>Tap + to create one!</div>';
+    return;
+  }
+  grid.innerHTML = notes.map(n => `
+    <div class="note-card" style="--note-color:${n.color}" onclick="openEdit('${n.id}')">
+      <span class="note-del" onclick="event.stopPropagation();delNote('${n.id}')">🗑</span>
+      <div class="note-title">${n.title || 'Untitled'}</div>
+      <div class="note-body">${n.body || '<em style="opacity:.5">Empty note</em>'}</div>
+      <div class="note-footer">
+        <span class="note-cat">${n.cat}</span>
+        <span class="note-date">${fmtDate(n.updated)}</span>
+      </div>
+    </div>`).join('');
+}
+
+function openModal() {
+  editId = null;
+  document.getElementById('modal-title').textContent = 'New Note';
+  document.getElementById('n-title').value = '';
+  document.getElementById('n-body').value  = '';
+  document.getElementById('modal').style.display = 'flex';
+}
+function openEdit(id) {
+  const note = Store.get('notes', []).find(n => n.id === id);
+  if (!note) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Edit Note';
+  document.getElementById('n-title').value = note.title;
+  document.getElementById('n-body').value  = note.body;
+  selCatVal = note.cat;
+  selColorVal = note.color || '#6c63ff';
+  document.querySelectorAll('.cat-opt').forEach(c=>c.classList.toggle('selected', c.dataset.c === note.cat));
+  document.querySelectorAll('.cp').forEach(c=>c.classList.toggle('selected', c.dataset.col === note.color));
+  document.getElementById('modal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+function closeIfBg(e) { if (e.target === document.getElementById('modal')) closeModal(); }
+
+function saveNote() {
+  const title = document.getElementById('n-title').value.trim();
+  const body  = document.getElementById('n-body').value.trim();
+  if (!title && !body) { notify('Empty!', 'Add a title or content first'); return; }
+  let notes = Store.get('notes', []);
+  if (editId) {
+    notes = notes.map(n => n.id === editId ? {...n, title, body, cat:selCatVal, color:selColorVal, updated:new Date().toISOString()} : n);
+    notify('Saved!', 'Note updated');
+  } else {
+    notes.unshift({ id: Date.now().toString(), title, body, cat:selCatVal, color:selColorVal, created:new Date().toISOString(), updated:new Date().toISOString() });
+    notify('Note created!', title || 'Untitled');
+  }
+  Store.set('notes', notes);
+  closeModal();
+  renderNotes();
+}
+function delNote(id) {
+  if (!confirm('Delete this note?')) return;
+  Store.set('notes', Store.get('notes', []).filter(n => n.id !== id));
+  renderNotes();
+  notify('Deleted', 'Note removed');
+}
+
+renderNotes();
+</script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Steve – Dashboard</title>
+<link rel="stylesheet" href="../css/style.css"/>
+<style>
+.scroll-body { overflow-y:auto; flex:1; padding-bottom:90px; }
+.hero-card {
+  margin:1rem; padding:1.4rem;
+  background:linear-gradient(135deg, rgba(108,99,255,.25), rgba(56,189,248,.15));
+  border:1px solid rgba(108,99,255,.3); border-radius:var(--r2);
+}
+.hero-greeting { font-size:1.05rem; color:var(--text2); margin-bottom:.2rem; }
+.hero-name { font-size:1.9rem; font-weight:900; }
+.uid-badge { display:inline-flex; align-items:center; gap:6px; margin-top:.5rem; padding:5px 12px; background:rgba(108,99,255,.15); border:1px solid rgba(108,99,255,.3); border-radius:99px; font-family:var(--mono); font-size:.72rem; color:var(--accent2); }
+.stats-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 1rem 1rem; }
+.stat-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:1rem; }
+.stat-num  { font-size:1.8rem; font-weight:900; }
+.stat-lbl  { font-size:.75rem; color:var(--text2); font-weight:700; margin-top:2px; }
+.stat-icon { font-size:1.2rem; margin-bottom:.3rem; }
+.section-head { display:flex; align-items:center; justify-content:space-between; padding:0 1rem; margin-bottom:.6rem; }
+.section-head h3 { font-size:1rem; font-weight:800; }
+.see-all { font-size:.8rem; color:var(--accent2); font-weight:700; cursor:pointer; }
+.see-all:hover { text-decoration:underline; }
+.quick-actions { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:0 1rem 1.2rem; }
+.qa-btn { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:.85rem .5rem; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; transition:all .2s; text-decoration:none; color:var(--text); }
+.qa-btn:hover { background:var(--surface2); border-color:var(--accent); transform:translateY(-2px); }
+.qa-btn .icon { font-size:1.3rem; }
+.qa-btn .lbl  { font-size:.7rem; font-weight:800; color:var(--text2); }
+.reminder-list { margin:0 1rem 1rem; display:flex; flex-direction:column; gap:8px; }
+.reminder-item { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:.9rem 1rem; display:flex; align-items:center; gap:.75rem; }
+.ri-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.ri-body { flex:1; min-width:0; }
+.ri-title { font-weight:700; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ri-time  { font-size:.75rem; color:var(--text2); margin-top:2px; }
+.ri-done  { font-size:1rem; cursor:pointer; opacity:.5; transition:opacity .2s; }
+.ri-done:hover { opacity:1; }
+.goal-list { margin:0 1rem 1rem; display:flex; flex-direction:column; gap:10px; }
+.goal-item { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:.9rem 1rem; }
+.goal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:.6rem; }
+.goal-title { font-weight:700; font-size:.92rem; }
+.goal-pct   { font-size:.8rem; font-weight:800; color:var(--accent2); }
+.empty-state { text-align:center; padding:2rem 1rem; color:var(--text3); font-size:.9rem; }
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+<div class="page-wrap" style="display:flex;flex-direction:column;min-height:100vh">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Dashboard</div>
+      <div class="topbar-sub" id="date-display"></div>
+    </div>
+    <div class="avatar" id="avatar-btn" onclick="window.location.href='profile.html'">?</div>
+  </div>
+
+  <div class="scroll-body">
+    <!-- Hero -->
+    <div class="hero-card">
+      <div class="hero-greeting">Good <span id="time-greet">day</span>,</div>
+      <div class="hero-name" id="hero-name">Student</div>
+      <div class="uid-badge">🎓 <span id="hero-uid">—</span></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon">📋</div>
+        <div class="stat-num" id="stat-reminders">0</div>
+        <div class="stat-lbl">Active Reminders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-num" id="stat-goals">0</div>
+        <div class="stat-lbl">Goals Tracked</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📝</div>
+        <div class="stat-num" id="stat-notes">0</div>
+        <div class="stat-lbl">Notes Saved</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⏱</div>
+        <div class="stat-num" id="stat-focus">0h</div>
+        <div class="stat-lbl">Focus Time</div>
+      </div>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="section-head"><h3>Quick Access</h3></div>
+    <div class="quick-actions">
+      <a class="qa-btn" href="timer.html"><span class="icon">⏱</span><span class="lbl">Timer</span></a>
+      <a class="qa-btn" href="notes.html"><span class="icon">📝</span><span class="lbl">Notes</span></a>
+      <a class="qa-btn" href="calendar.html"><span class="icon">📅</span><span class="lbl">Calendar</span></a>
+      <a class="qa-btn" href="more.html#calc"><span class="icon">🔢</span><span class="lbl">Calc</span></a>
+    </div>
+
+    <!-- Reminders -->
+    <div class="section-head">
+      <h3>Upcoming Reminders</h3>
+      <span class="see-all" onclick="window.location.href='reminders.html'">See all →</span>
+    </div>
+    <div class="reminder-list" id="reminder-list">
+      <div class="empty-state">No upcoming reminders.<br/>Add one in the Calendar!</div>
+    </div>
+
+    <!-- Goals -->
+    <div class="section-head">
+      <h3>Goals</h3>
+      <span class="see-all" onclick="window.location.href='goals.html'">See all →</span>
+    </div>
+    <div class="goal-list" id="goal-list">
+      <div class="empty-state">No goals yet.<br/>Set one to start tracking!</div>
+    </div>
+  </div>
+
+  <nav class="nav" id="main-nav"></nav>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+const user = requireAuth();
+if (user) {
+  // Greet
+  const h = new Date().getHours();
+  document.getElementById('time-greet').textContent = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  document.getElementById('hero-name').textContent = user.name;
+  document.getElementById('hero-uid').textContent  = user.uid;
+  document.getElementById('avatar-btn').textContent = user.name[0].toUpperCase();
+  document.getElementById('date-display').textContent = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+
+  // Stats
+  const reminders = Store.get('reminders', []).filter(r => !r.done);
+  const goals     = Store.get('goals', []);
+  const notes     = Store.get('notes', []);
+  const focusMins = Store.get('focus_minutes', 0);
+  document.getElementById('stat-reminders').textContent = reminders.length;
+  document.getElementById('stat-goals').textContent     = goals.length;
+  document.getElementById('stat-notes').textContent     = notes.length;
+  document.getElementById('stat-focus').textContent     = Math.floor(focusMins / 60) + 'h';
+
+  // Render upcoming reminders
+  const upcoming = reminders.filter(r => r.datetime).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime)).slice(0,4);
+  const rList = document.getElementById('reminder-list');
+  if (upcoming.length) {
+    const colors = ['var(--accent)','var(--green)','var(--amber)','var(--pink)'];
+    rList.innerHTML = upcoming.map((r,i) => `
+      <div class="reminder-item">
+        <div class="ri-dot" style="background:${colors[i%colors.length]}"></div>
+        <div class="ri-body">
+          <div class="ri-title">${r.title}</div>
+          <div class="ri-time">${fmtDate(r.datetime)} · ${fmtTime(r.datetime)}</div>
+        </div>
+        <span class="ri-done" onclick="doneReminder('${r.id}')">✓</span>
+      </div>`).join('');
+  }
+
+  // Render goals
+  const gList = document.getElementById('goal-list');
+  if (goals.length) {
+    gList.innerHTML = goals.slice(0,3).map(g => `
+      <div class="goal-item">
+        <div class="goal-head">
+          <span class="goal-title">${g.title}</span>
+          <span class="goal-pct">${g.progress}%</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-fill" style="width:${g.progress}%"></div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function doneReminder(id) {
+  const reminders = Store.get('reminders', []).map(r => r.id === id ? {...r, done:true} : r);
+  Store.set('reminders', reminders);
+  notify('Done!', 'Reminder marked as complete ✓');
+  setTimeout(() => location.reload(), 600);
+}
+</script>
+</body>
+</html>

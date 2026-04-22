@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Steve – Sign In / Sign Up</title>
+<link rel="stylesheet" href="../css/style.css"/>
+<style>
+body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding: 1.5rem; }
+.auth-wrap { width:100%; max-width:420px; animation: pageIn .45s cubic-bezier(.34,1.45,.64,1) both; }
+.back-btn { display:inline-flex; align-items:center; gap:6px; color:var(--text2); font-size:.88rem; font-weight:600; margin-bottom:1.5rem; cursor:pointer; }
+.back-btn:hover { color:var(--text); }
+.logo-sm { width:52px; height:52px; background:linear-gradient(135deg,var(--accent),var(--accent3)); border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:1rem; }
+h1 { font-size:1.9rem; font-weight:900; margin-bottom:.3rem; }
+.auth-sub { color:var(--text2); font-size:.9rem; margin-bottom:1.8rem; }
+.tab-row { display:flex; background:var(--surface); border-radius:var(--r); padding:4px; margin-bottom:1.5rem; gap:4px; }
+.tab-btn { flex:1; padding:.6rem; border-radius:12px; font-size:.9rem; font-weight:700; color:var(--text2); background:transparent; transition:all .25s; cursor:pointer; }
+.tab-btn.active { background:var(--accent); color:#fff; }
+.form-group { margin-bottom:1rem; }
+.form-group label { display:block; font-size:.75rem; font-weight:800; color:var(--text3); margin-bottom:.45rem; text-transform:uppercase; letter-spacing:.06em; }
+.uid-box {
+  padding:.85rem 1rem; background:rgba(108,99,255,.1); border:1px solid rgba(108,99,255,.3);
+  border-radius:var(--r3); font-family:var(--mono); font-size:.9rem; color:var(--accent2);
+  margin-top:.4rem; letter-spacing:.04em;
+}
+.uid-label { font-size:.72rem; color:var(--text3); margin-top:.4rem; }
+.btn-submit {
+  width:100%; padding:1rem; background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  color:#fff; border-radius:var(--r); font-size:1rem; font-weight:800;
+  margin-top:.5rem; transition:all .25s; letter-spacing:.02em;
+}
+.btn-submit:hover  { transform:translateY(-2px); box-shadow:0 10px 32px rgba(108,99,255,.4); }
+.btn-submit:active { transform:scale(.98); }
+.err-msg { color:var(--red); font-size:.82rem; margin-top:.4rem; font-weight:600; min-height:1.1em; }
+.pass-hint { font-size:.75rem; color:var(--text3); margin-top:.3rem; }
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+<div class="auth-wrap page-wrap">
+  <div class="back-btn" onclick="history.back()">← Back</div>
+  <div class="logo-sm">🧠</div>
+  <h1 id="auth-title">Welcome back</h1>
+  <p class="auth-sub" id="auth-sub">Sign in to your Steve account</p>
+
+  <div class="tab-row">
+    <button class="tab-btn" id="tab-login" onclick="setMode('login')">Login</button>
+    <button class="tab-btn" id="tab-signup" onclick="setMode('signup')">Sign Up</button>
+  </div>
+
+  <!-- LOGIN FORM -->
+  <div id="login-form">
+    <div class="form-group">
+      <label>Username</label>
+      <input class="input-field" id="l-user" type="text" placeholder="Enter your username" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label>Passkey</label>
+      <input class="input-field" id="l-pass" type="password" placeholder="Enter your passkey" autocomplete="current-password"/>
+    </div>
+    <p class="err-msg" id="l-err"></p>
+    <button class="btn-submit" onclick="doLogin()">Sign In →</button>
+  </div>
+
+  <!-- SIGNUP FORM -->
+  <div id="signup-form" style="display:none">
+    <div class="form-group">
+      <label>Full Name</label>
+      <input class="input-field" id="s-name" type="text" placeholder="e.g. Arjun Sharma" oninput="updateUID()"/>
+    </div>
+    <div class="form-group">
+      <label>Username</label>
+      <input class="input-field" id="s-user" type="text" placeholder="Choose a username"/>
+    </div>
+    <div class="form-group">
+      <label>Passkey</label>
+      <input class="input-field" id="s-pass" type="password" placeholder="Create a passkey (min 4 chars)"/>
+      <p class="pass-hint">Your passkey is stored locally on this device.</p>
+    </div>
+    <div class="form-group">
+      <label>Your Student ID</label>
+      <div class="uid-box" id="uid-display">Fill your name above ↑</div>
+      <p class="uid-label">Auto-generated — keep this safe!</p>
+    </div>
+    <p class="err-msg" id="s-err"></p>
+    <button class="btn-submit" onclick="doSignup()">Create Account →</button>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+let mode = params.get('mode') || 'login';
+let generatedUID = '';
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('login-form').style.display  = m === 'login'  ? 'block' : 'none';
+  document.getElementById('signup-form').style.display = m === 'signup' ? 'block' : 'none';
+  document.getElementById('tab-login').classList.toggle('active', m === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', m === 'signup');
+  document.getElementById('auth-title').textContent = m === 'login' ? 'Welcome back' : 'Join Steve';
+  document.getElementById('auth-sub').textContent   = m === 'login' ? 'Sign in to your account' : 'Create your student account';
+}
+
+function updateUID() {
+  const name = document.getElementById('s-name').value.trim();
+  if (name.length >= 2) {
+    generatedUID = generateUID(name);
+    document.getElementById('uid-display').textContent = generatedUID;
+  } else {
+    document.getElementById('uid-display').textContent = 'Fill your name above ↑';
+  }
+}
+
+function doLogin() {
+  const user  = document.getElementById('l-user').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const users = Store.get('users', []);
+  const found = users.find(u => u.username === user && u.passkey === pass);
+  if (!found) { document.getElementById('l-err').textContent = 'Invalid username or passkey.'; return; }
+  Store.set('user', found);
+  notify('Welcome back!', `Hey ${found.name}, good to see you 👋`);
+  setTimeout(() => { window.location.href = 'dashboard.html'; }, 500);
+}
+
+function doSignup() {
+  const name = document.getElementById('s-name').value.trim();
+  const user = document.getElementById('s-user').value.trim();
+  const pass = document.getElementById('s-pass').value;
+  const err  = document.getElementById('s-err');
+  if (!name || !user || !pass) { err.textContent = 'Please fill all fields.'; return; }
+  if (pass.length < 4) { err.textContent = 'Passkey must be at least 4 characters.'; return; }
+  const users = Store.get('users', []);
+  if (users.find(u => u.username === user)) { err.textContent = 'Username already taken.'; return; }
+  const uid = generatedUID || generateUID(name);
+  const newUser = { name, username: user, passkey: pass, uid, joined: new Date().toISOString() };
+  users.push(newUser);
+  Store.set('users', users);
+  Store.set('user', newUser);
+  notify('Account created!', `Welcome, ${name}! Your ID: ${uid}`);
+  setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
+}
+
+setMode(mode);
+
+document.querySelectorAll('.input-field').forEach(inp => {
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { mode === 'login' ? doLogin() : doSignup(); } });
+});
+</script>
+</body>
+</html>

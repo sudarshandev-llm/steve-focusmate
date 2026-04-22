@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Steve – Profile</title>
+<link rel="stylesheet" href="../css/style.css"/>
+<style>
+.scroll-body { overflow-y:auto; flex:1; padding-bottom:90px; }
+.profile-hero {
+  display:flex; flex-direction:column; align-items:center;
+  padding:2rem 1.5rem 1.5rem; text-align:center;
+}
+.avatar-lg {
+  width:96px; height:96px; border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent3));
+  display:flex; align-items:center; justify-content:center;
+  font-size:2.5rem; font-weight:900; color:#fff; margin-bottom:1rem;
+  box-shadow:0 0 0 6px rgba(108,99,255,.2);
+}
+.profile-name { font-size:1.7rem; font-weight:900; margin-bottom:.3rem; }
+.profile-uid  { font-family:var(--mono); font-size:.82rem; color:var(--accent2); background:rgba(108,99,255,.12); padding:5px 14px; border-radius:99px; border:1px solid rgba(108,99,255,.25); display:inline-block; margin-bottom:.4rem; }
+.profile-joined { font-size:.78rem; color:var(--text3); }
+.info-section { padding:0 1rem; margin-bottom:1rem; }
+.info-row { display:flex; justify-content:space-between; align-items:center; padding:.85rem 0; border-bottom:1px solid var(--border); }
+.info-row:last-child { border-bottom:none; }
+.info-key { font-size:.82rem; color:var(--text2); font-weight:700; }
+.info-val { font-size:.88rem; font-weight:700; text-align:right; }
+.danger-zone { margin:0 1rem 1rem; }
+.danger-title { font-size:.8rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--red); margin-bottom:.6rem; }
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+<div class="page-wrap" style="display:flex;flex-direction:column;min-height:100vh">
+  <div class="topbar">
+    <div class="back-btn" style="display:flex;align-items:center;gap:6px;color:var(--text2);font-size:.88rem;font-weight:600;cursor:pointer" onclick="history.back()">← Back</div>
+  </div>
+
+  <div class="scroll-body">
+    <div class="profile-hero">
+      <div class="avatar-lg" id="av"></div>
+      <div class="profile-name" id="p-name"></div>
+      <div class="profile-uid"  id="p-uid"></div>
+      <div class="profile-joined" id="p-joined"></div>
+    </div>
+
+    <div class="section-label">Student Information</div>
+    <div class="info-section card" style="margin:0 1rem 1rem">
+      <div class="info-row"><span class="info-key">Full Name</span><span class="info-val" id="i-name">—</span></div>
+      <div class="info-row"><span class="info-key">Username</span><span class="info-val" id="i-user">—</span></div>
+      <div class="info-row"><span class="info-key">Student ID</span><span class="info-val" id="i-uid" style="font-family:var(--mono);color:var(--accent2)">—</span></div>
+      <div class="info-row"><span class="info-key">Member Since</span><span class="info-val" id="i-date">—</span></div>
+    </div>
+
+    <div class="section-label">Activity Stats</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 1rem;margin-bottom:1rem">
+      <div class="card-sm" style="text-align:center">
+        <div style="font-size:1.4rem;font-weight:900" id="s-notes">0</div>
+        <div style="font-size:.7rem;color:var(--text2);font-weight:700;margin-top:2px">Notes</div>
+      </div>
+      <div class="card-sm" style="text-align:center">
+        <div style="font-size:1.4rem;font-weight:900" id="s-goals">0</div>
+        <div style="font-size:.7rem;color:var(--text2);font-weight:700;margin-top:2px">Goals</div>
+      </div>
+      <div class="card-sm" style="text-align:center">
+        <div style="font-size:1.4rem;font-weight:900" id="s-focus">0h</div>
+        <div style="font-size:.7rem;color:var(--text2);font-weight:700;margin-top:2px">Focus</div>
+      </div>
+    </div>
+
+    <div class="section-label">Account</div>
+    <div class="danger-zone">
+      <div class="danger-title">Danger Zone</div>
+      <button class="btn btn-danger" style="width:100%;padding:.85rem" onclick="doLogout()">Sign Out of Steve</button>
+    </div>
+  </div>
+
+  <nav class="nav" id="main-nav"></nav>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+const user = requireAuth();
+if (user) {
+  document.getElementById('av').textContent       = user.name[0].toUpperCase();
+  document.getElementById('p-name').textContent   = user.name;
+  document.getElementById('p-uid').textContent    = user.uid;
+  document.getElementById('p-joined').textContent = 'Joined ' + fmtDate(user.joined);
+  document.getElementById('i-name').textContent   = user.name;
+  document.getElementById('i-user').textContent   = '@' + user.username;
+  document.getElementById('i-uid').textContent    = user.uid;
+  document.getElementById('i-date').textContent   = fmtDate(user.joined);
+  document.getElementById('s-notes').textContent  = Store.get('notes',[]).length;
+  document.getElementById('s-goals').textContent  = Store.get('goals',[]).length;
+  const fm = Store.get('focus_minutes', 0);
+  document.getElementById('s-focus').textContent  = Math.floor(fm/60) + 'h';
+}
+function doLogout() {
+  if (confirm('Sign out of Steve?')) logout();
+}
+</script>
+</body>
+</html>

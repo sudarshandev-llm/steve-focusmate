@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Steve – Calendar</title>
+<link rel="stylesheet" href="../css/style.css"/>
+<style>
+.scroll-body { overflow-y:auto; flex:1; padding-bottom:90px; }
+.cal-wrap { padding:0 1rem; margin-bottom:1rem; }
+.cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+.cal-month  { font-size:1.15rem; font-weight:800; }
+.nav-arrow  { width:36px; height:36px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:.9rem; transition:all .2s; }
+.nav-arrow:hover { background:var(--surface3); border-color:var(--accent); }
+.cal-grid   { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.cal-dow    { text-align:center; font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text3); padding:.4rem 0; }
+.cal-day {
+  aspect-ratio:1; border-radius:var(--r3); display:flex; flex-direction:column;
+  align-items:center; justify-content:center; cursor:pointer;
+  font-size:.85rem; font-weight:600; transition:all .2s; gap:2px; position:relative;
+}
+.cal-day:hover { background:var(--surface2); }
+.cal-day.today { background:rgba(108,99,255,.2); color:var(--accent2); font-weight:900; }
+.cal-day.selected { background:var(--accent); color:#fff; }
+.cal-day.other  { color:var(--text3); }
+.cal-day.has-event::after {
+  content:''; width:4px; height:4px; border-radius:50%;
+  background:var(--green); position:absolute; bottom:4px;
+}
+.cal-day.selected::after { background:#fff; }
+.events-section { padding:0 1rem; }
+.event-item {
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--r);
+  padding:.9rem 1rem; margin-bottom:8px; display:flex; gap:.85rem; align-items:flex-start;
+  cursor:pointer; transition:all .2s;
+}
+.event-item:hover { border-color:var(--accent); }
+.event-time-col { text-align:center; min-width:40px; }
+.event-hour  { font-size:.75rem; font-weight:800; color:var(--accent2); }
+.event-bar   { width:3px; height:100%; border-radius:99px; flex-shrink:0; }
+.event-body  { flex:1; }
+.event-title { font-weight:700; font-size:.92rem; }
+.event-desc  { font-size:.78rem; color:var(--text2); margin-top:2px; }
+.event-tag   { margin-top:.4rem; }
+.event-del   { color:var(--text3); font-size:.8rem; cursor:pointer; padding:2px 6px; border-radius:4px; }
+.event-del:hover { color:var(--red); }
+.empty-day   { text-align:center; padding:2rem; color:var(--text3); font-size:.9rem; }
+.fab {
+  position:fixed; bottom:85px; right:20px; width:58px; height:58px; border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; box-shadow:0 8px 28px rgba(108,99,255,.4);
+  cursor:pointer; z-index:50; transition:all .22s;
+}
+.fab:hover { transform:scale(1.1) rotate(10deg); }
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:200; display:flex; align-items:flex-end; justify-content:center; animation:fadeIn .2s; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal-sheet { width:100%; max-width:520px; background:var(--bg2); border-radius:var(--r2) var(--r2) 0 0; padding:1.5rem; max-height:85vh; overflow-y:auto; animation:sheetUp .3s cubic-bezier(.34,1.45,.64,1); }
+@keyframes sheetUp { from{transform:translateY(100%)} to{transform:none} }
+.modal-handle { width:40px; height:4px; background:var(--border2); border-radius:2px; margin:0 auto 1.2rem; }
+.type-row { display:flex; gap:8px; margin-bottom:1rem; flex-wrap:wrap; }
+.type-pill { padding:.45rem 1rem; border-radius:99px; font-size:.8rem; font-weight:700; border:1px solid var(--border2); background:var(--surface); color:var(--text2); cursor:pointer; transition:all .2s; }
+.type-pill.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+<div class="page-wrap" style="display:flex;flex-direction:column;min-height:100vh">
+  <div class="topbar">
+    <div><div class="topbar-title">Calendar</div><div class="topbar-sub" id="sel-date-label">Today</div></div>
+  </div>
+
+  <div class="scroll-body">
+    <div class="cal-wrap card" style="margin:0 1rem 1rem">
+      <div class="cal-header">
+        <button class="nav-arrow" onclick="changeMonth(-1)">‹</button>
+        <div class="cal-month" id="cal-month"></div>
+        <button class="nav-arrow" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <div class="section-label" id="events-label">Events & Reminders</div>
+    <div class="events-section" id="events-list"></div>
+  </div>
+
+  <div class="fab" onclick="openModal()">+</div>
+  <nav class="nav" id="main-nav"></nav>
+</div>
+
+<!-- Add Event Modal -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="bgClose(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div style="font-size:1.1rem;font-weight:800;margin-bottom:1rem">Add Event / Reminder</div>
+    <div class="form-group">
+      <label>Type</label>
+      <div class="type-row">
+        <div class="type-pill active" data-t="event"    onclick="selType(this)">📅 Event</div>
+        <div class="type-pill"        data-t="reminder" onclick="selType(this)">⏰ Reminder</div>
+        <div class="type-pill"        data-t="deadline" onclick="selType(this)">📌 Deadline</div>
+        <div class="type-pill"        data-t="class"    onclick="selType(this)">🏫 Class</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Title</label>
+      <input class="input-field" id="e-title" placeholder="Event title"/>
+    </div>
+    <div class="form-group">
+      <label>Description (optional)</label>
+      <input class="input-field" id="e-desc" placeholder="Short description"/>
+    </div>
+    <div class="form-group">
+      <label>Date & Time</label>
+      <input class="input-field" id="e-datetime" type="datetime-local"/>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:.5rem">
+      <button class="btn btn-ghost" onclick="closeModal()" style="flex:1">Cancel</button>
+      <button class="btn btn-grad" onclick="saveEvent()" style="flex:1">Add Event</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+requireAuth();
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+let viewYear  = new Date().getFullYear();
+let viewMonth = new Date().getMonth();
+let selDate   = new Date().toDateString();
+let selType_  = 'event';
+
+function changeMonth(d) { viewMonth += d; if(viewMonth>11){viewMonth=0;viewYear++}if(viewMonth<0){viewMonth=11;viewYear--} renderCal(); }
+
+function renderCal() {
+  document.getElementById('cal-month').textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+  const grid = document.getElementById('cal-grid');
+  const events = Store.get('reminders', []);
+  const eventDates = new Set(events.map(e => e.datetime ? new Date(e.datetime).toDateString() : null).filter(Boolean));
+
+  let html = DAYS.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const first = new Date(viewYear, viewMonth, 1).getDay();
+  const total = new Date(viewYear, viewMonth+1, 0).getDate();
+  const prevTotal = new Date(viewYear, viewMonth, 0).getDate();
+  const today = new Date().toDateString();
+
+  for(let i=0;i<first;i++){
+    const d = prevTotal-first+1+i;
+    html += `<div class="cal-day other">${d}</div>`;
+  }
+  for(let d=1;d<=total;d++){
+    const dt = new Date(viewYear,viewMonth,d).toDateString();
+    const cls = [
+      'cal-day',
+      dt===today     ? 'today'    : '',
+      dt===selDate   ? 'selected' : '',
+      eventDates.has(dt) ? 'has-event' : ''
+    ].filter(Boolean).join(' ');
+    html += `<div class="${cls}" onclick="selectDay('${dt}')">${d}</div>`;
+  }
+  const remaining = 42 - first - total;
+  for(let d=1;d<=remaining;d++) html += `<div class="cal-day other">${d}</div>`;
+  grid.innerHTML = html;
+  renderEvents();
+}
+
+function selectDay(dt) {
+  selDate = dt;
+  document.getElementById('sel-date-label').textContent = new Date(dt).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+  renderCal();
+}
+
+function renderEvents() {
+  const events = Store.get('reminders', []).filter(e => e.datetime && new Date(e.datetime).toDateString() === selDate);
+  const el = document.getElementById('events-list');
+  document.getElementById('events-label').textContent = `Events on ${new Date(selDate).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}`;
+  if (!events.length) { el.innerHTML = '<div class="empty-day">No events this day.<br/>Tap + to add one!</div>'; return; }
+  const colors = { event:'var(--accent)', reminder:'var(--amber)', deadline:'var(--red)', class:'var(--green)' };
+  el.innerHTML = events.sort((a,b)=>new Date(a.datetime)-new Date(b.datetime)).map(e => `
+    <div class="event-item">
+      <div class="event-time-col">
+        <div class="event-hour">${fmtTime(e.datetime)}</div>
+      </div>
+      <div class="event-bar" style="background:${colors[e.type]||'var(--accent)'}"></div>
+      <div class="event-body">
+        <div class="event-title">${e.title}</div>
+        ${e.desc?`<div class="event-desc">${e.desc}</div>`:''}
+        <div class="event-tag"><span class="badge badge-accent">${e.type||'event'}</span></div>
+      </div>
+      <span class="event-del" onclick="delEvent('${e.id}')">🗑</span>
+    </div>`).join('');
+}
+
+function openModal() {
+  // Prefill with selected date
+  const d = new Date(selDate);
+  d.setHours(9,0,0,0);
+  const local = new Date(d - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  document.getElementById('e-datetime').value = local;
+  document.getElementById('e-title').value = '';
+  document.getElementById('e-desc').value  = '';
+  document.getElementById('modal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+function bgClose(e) { if(e.target===document.getElementById('modal')) closeModal(); }
+function selType(el) {
+  document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  selType_ = el.dataset.t;
+}
+
+function saveEvent() {
+  const title    = document.getElementById('e-title').value.trim();
+  const desc     = document.getElementById('e-desc').value.trim();
+  const datetime = document.getElementById('e-datetime').value;
+  if (!title) { notify('Missing!', 'Please enter a title'); return; }
+  if (!datetime) { notify('Missing!', 'Please pick a date & time'); return; }
+  const items = Store.get('reminders', []);
+  items.push({ id: Date.now().toString(), title, desc, type:selType_, datetime, notified:false, done:false });
+  Store.set('reminders', items);
+  closeModal();
+  notify('Added!', `"${title}" saved to calendar`);
+  renderCal();
+}
+function delEvent(id) {
+  Store.set('reminders', Store.get('reminders', []).filter(e=>e.id!==id));
+  renderCal();
+  notify('Removed', 'Event deleted');
+}
+
+// Init datetime to local min
+const now = new Date(); now.setSeconds(0);
+const pad = n => n.toString().padStart(2,'0');
+document.getElementById('e-datetime') && (document.getElementById('e-datetime').min = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`);
+
+selectDay(new Date().toDateString());
+renderCal();
+</script>
+</body>
+</html>

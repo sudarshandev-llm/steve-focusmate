@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Steve – More</title>
+<link rel="stylesheet" href="../css/style.css"/>
+<style>
+.scroll-body { overflow-y:auto; flex:1; padding-bottom:90px; }
+.more-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 1rem 1rem; }
+.more-tile {
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--r2);
+  padding:1.2rem; cursor:pointer; transition:all .22s; text-align:left;
+  display:flex; flex-direction:column; gap:.4rem; text-decoration:none; color:var(--text);
+}
+.more-tile:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.3); }
+.tile-icon { font-size:1.8rem; }
+.tile-name { font-weight:800; font-size:.95rem; }
+.tile-desc { font-size:.75rem; color:var(--text2); }
+
+/* Calculator */
+.calc-wrap { margin:0 1rem 1rem; }
+.calc-screen {
+  background:var(--bg3); border:1px solid var(--border); border-radius:var(--r);
+  padding:1rem 1.25rem; text-align:right; margin-bottom:.75rem;
+}
+.calc-expr   { font-family:var(--mono); font-size:.85rem; color:var(--text3); min-height:1.2em; }
+.calc-result { font-family:var(--mono); font-size:2.2rem; font-weight:700; word-break:break-all; }
+.calc-grid   { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.calc-btn {
+  aspect-ratio:1.1; border-radius:var(--r3); font-size:1.1rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .15s; background:var(--bg2); border:1px solid var(--border); color:var(--text);
+}
+.calc-btn:hover  { background:var(--surface3); }
+.calc-btn:active { transform:scale(.93); }
+.calc-btn.op     { background:rgba(108,99,255,.15); color:var(--accent2); border-color:rgba(108,99,255,.3); }
+.calc-btn.eq     { background:linear-gradient(135deg,var(--accent),#8b5cf6); color:#fff; border:none; grid-column:span 2; }
+.calc-btn.clr    { background:rgba(248,113,113,.12); color:var(--red); border-color:rgba(248,113,113,.25); }
+.calc-btn.wide   { grid-column:span 2; aspect-ratio:auto; padding:.8rem; }
+
+/* Reminders quick list */
+.rem-section { padding:0 1rem; }
+.rem-item { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:.9rem 1rem; margin-bottom:8px; }
+.rem-head  { display:flex; justify-content:space-between; align-items:center; }
+.rem-title { font-weight:700; font-size:.92rem; }
+.rem-when  { font-size:.75rem; color:var(--text2); margin-top:2px; }
+.add-rem-row { display:flex; gap:8px; margin-bottom:1rem; }
+
+/* Goals */
+.goal-section { padding:0 1rem; }
+.goal-item { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:.9rem 1rem; margin-bottom:8px; }
+.goal-row  { display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; }
+.goal-title { font-weight:700; font-size:.92rem; }
+.goal-actions { display:flex; gap:6px; }
+.sl { width:100%; }
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+<div class="page-wrap" style="display:flex;flex-direction:column;min-height:100vh">
+  <div class="topbar">
+    <div><div class="topbar-title">More</div><div class="topbar-sub">Tools & settings</div></div>
+  </div>
+
+  <div class="scroll-body">
+    <!-- Tiles -->
+    <div class="more-grid">
+      <a class="more-tile" href="profile.html">
+        <div class="tile-icon">👤</div>
+        <div class="tile-name">Profile</div>
+        <div class="tile-desc">View your student ID & info</div>
+      </a>
+      <a class="more-tile" href="coming-soon.html">
+        <div class="tile-icon">🚀</div>
+        <div class="tile-name">Alumni AI</div>
+        <div class="tile-desc">Coming Soon</div>
+      </a>
+      <div class="more-tile" onclick="scrollTo(0, document.getElementById('calc-section').offsetTop - 20)">
+        <div class="tile-icon">🔢</div>
+        <div class="tile-name">Calculator</div>
+        <div class="tile-desc">Quick math tool</div>
+      </div>
+      <div class="more-tile" onclick="scrollTo(0, document.getElementById('goals-section').offsetTop - 20)">
+        <div class="tile-icon">🎯</div>
+        <div class="tile-name">Goals</div>
+        <div class="tile-desc">Track your progress</div>
+      </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="section-label" id="calc-section">Calculator</div>
+    <div class="calc-wrap">
+      <div class="calc-screen">
+        <div class="calc-expr" id="expr"></div>
+        <div class="calc-result" id="result">0</div>
+      </div>
+      <div class="calc-grid">
+        <div class="calc-btn clr"  onclick="calcAC()">AC</div>
+        <div class="calc-btn op"   onclick="calcSign()">+/−</div>
+        <div class="calc-btn op"   onclick="calcPct()">%</div>
+        <div class="calc-btn op"   onclick="calcOp('/')">÷</div>
+
+        <div class="calc-btn" onclick="calcNum('7')">7</div>
+        <div class="calc-btn" onclick="calcNum('8')">8</div>
+        <div class="calc-btn" onclick="calcNum('9')">9</div>
+        <div class="calc-btn op" onclick="calcOp('*')">×</div>
+
+        <div class="calc-btn" onclick="calcNum('4')">4</div>
+        <div class="calc-btn" onclick="calcNum('5')">5</div>
+        <div class="calc-btn" onclick="calcNum('6')">6</div>
+        <div class="calc-btn op" onclick="calcOp('-')">−</div>
+
+        <div class="calc-btn" onclick="calcNum('1')">1</div>
+        <div class="calc-btn" onclick="calcNum('2')">2</div>
+        <div class="calc-btn" onclick="calcNum('3')">3</div>
+        <div class="calc-btn op" onclick="calcOp('+')">+</div>
+
+        <div class="calc-btn wide" onclick="calcNum('0')">0</div>
+        <div class="calc-btn" onclick="calcDot()">.</div>
+        <div class="calc-btn eq"  onclick="calcEq()">=</div>
+      </div>
+    </div>
+
+    <!-- Goals -->
+    <div class="section-label" id="goals-section">Goals Tracker</div>
+    <div class="rem-section" style="padding:0 1rem;margin-bottom:.75rem">
+      <div class="add-rem-row">
+        <input class="input-field" id="goal-input" placeholder="New goal title..." style="flex:1"/>
+        <button class="btn btn-grad" onclick="addGoal()">Add</button>
+      </div>
+    </div>
+    <div class="goal-section" id="goal-list">
+      <div style="text-align:center;color:var(--text3);padding:1rem">No goals yet. Add one above!</div>
+    </div>
+
+    <!-- Reminders quick add -->
+    <div class="section-label" style="margin-top:1rem">Quick Reminder</div>
+    <div class="rem-section">
+      <div class="add-rem-row">
+        <input class="input-field" id="rem-title" placeholder="Reminder title..." style="flex:1"/>
+        <input class="input-field" id="rem-dt" type="datetime-local" style="flex:1"/>
+      </div>
+      <button class="btn btn-grad" style="width:100%;margin-bottom:1rem" onclick="addReminder()">+ Add Reminder</button>
+      <div id="rem-list"></div>
+    </div>
+  </div>
+
+  <nav class="nav" id="main-nav"></nav>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+requireAuth();
+
+/* ─── Calculator ─── */
+let calcCur = '0', calcPrev = '', calcOperator = null, calcNewNum = true;
+
+function updCalc() {
+  document.getElementById('result').textContent = parseFloat(calcCur).toLocaleString('en-IN', {maximumFractionDigits:10});
+  document.getElementById('expr').textContent = calcPrev + (calcOperator ? ` ${calcOperator}` : '');
+}
+function calcNum(n) {
+  if (calcNewNum) { calcCur = n; calcNewNum = false; }
+  else calcCur = calcCur === '0' ? n : calcCur + n;
+  updCalc();
+}
+function calcDot() {
+  if (calcNewNum) { calcCur = '0.'; calcNewNum = false; }
+  else if (!calcCur.includes('.')) calcCur += '.';
+  updCalc();
+}
+function calcOp(op) {
+  calcPrev = calcCur; calcOperator = op; calcNewNum = true; updCalc();
+}
+function calcEq() {
+  if (!calcOperator) return;
+  const a = parseFloat(calcPrev), b = parseFloat(calcCur);
+  const ops = {'+':a+b,'-':a-b,'*':a*b,'/':b!==0?a/b:'Error'};
+  calcCur = String(ops[calcOperator]);
+  document.getElementById('expr').textContent = `${a} ${calcOperator} ${b} =`;
+  calcOperator = null; calcPrev = ''; calcNewNum = true; updCalc();
+}
+function calcAC()   { calcCur='0'; calcPrev=''; calcOperator=null; calcNewNum=true; updCalc(); }
+function calcSign() { calcCur = String(-parseFloat(calcCur)); updCalc(); }
+function calcPct()  { calcCur = String(parseFloat(calcCur)/100); updCalc(); }
+
+/* ─── Goals ─── */
+function renderGoals() {
+  const goals = Store.get('goals', []);
+  const el = document.getElementById('goal-list');
+  if (!goals.length) { el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:1rem">No goals yet. Add one above!</div>'; return; }
+  el.innerHTML = goals.map(g => `
+    <div class="goal-item">
+      <div class="goal-row">
+        <span class="goal-title">${g.title}</span>
+        <div class="goal-actions">
+          <span style="font-size:.8rem;font-weight:700;color:var(--accent2)">${g.progress}%</span>
+          <button class="btn btn-danger" style="padding:3px 8px;font-size:.75rem" onclick="delGoal('${g.id}')">✕</button>
+        </div>
+      </div>
+      <input type="range" class="sl" min="0" max="100" value="${g.progress}" oninput="updateGoalPct('${g.id}',this.value)"/>
+      <div class="progress-wrap" style="margin-top:.4rem">
+        <div class="progress-fill" style="width:${g.progress}%"></div>
+      </div>
+    </div>`).join('');
+}
+function addGoal() {
+  const title = document.getElementById('goal-input').value.trim();
+  if (!title) return;
+  const goals = Store.get('goals', []);
+  goals.push({ id: Date.now().toString(), title, progress:0 });
+  Store.set('goals', goals);
+  document.getElementById('goal-input').value = '';
+  notify('Goal added!', title);
+  renderGoals();
+}
+function delGoal(id) {
+  Store.set('goals', Store.get('goals', []).filter(g=>g.id!==id));
+  renderGoals();
+}
+function updateGoalPct(id, val) {
+  const goals = Store.get('goals', []).map(g=>g.id===id?{...g,progress:parseInt(val)}:g);
+  Store.set('goals', goals);
+  renderGoals();
+}
+
+/* ─── Reminders ─── */
+function renderReminders() {
+  const all = Store.get('reminders', []).filter(r=>!r.done).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime)).slice(0,5);
+  const el  = document.getElementById('rem-list');
+  if (!all.length) { el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:1rem;font-size:.9rem">No active reminders</div>'; return; }
+  el.innerHTML = all.map(r => `
+    <div class="rem-item">
+      <div class="rem-head">
+        <div>
+          <div class="rem-title">${r.title}</div>
+          <div class="rem-when">${r.datetime ? fmtDate(r.datetime)+' · '+fmtTime(r.datetime) : 'No time set'}</div>
+        </div>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:.8rem" onclick="doneRem('${r.id}')">✓ Done</button>
+      </div>
+    </div>`).join('');
+}
+function addReminder() {
+  const title = document.getElementById('rem-title').value.trim();
+  const dt    = document.getElementById('rem-dt').value;
+  if (!title) { notify('Missing!', 'Enter a reminder title'); return; }
+  const items = Store.get('reminders', []);
+  items.push({ id:Date.now().toString(), title, datetime:dt, type:'reminder', notified:false, done:false });
+  Store.set('reminders', items);
+  document.getElementById('rem-title').value = '';
+  notify('Reminder set!', title);
+  renderReminders();
+}
+function doneRem(id) {
+  Store.set('reminders', Store.get('reminders', []).map(r=>r.id===id?{...r,done:true}:r));
+  notify('Done!', 'Reminder completed ✓');
+  renderReminders();
+}
+
+// Handle #calc anchor
+if (location.hash === '#calc') document.getElementById('calc-section').scrollIntoView({ behavior:'smooth' });
+
+updCalc();
+renderGoals();
+renderReminders();
+</script>
+</body>
+</html>

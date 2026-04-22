@@ -1,0 +1,9 @@
+{
+  "name": "steve-focusmate",
+  "version": "1.0.0",
+  "description": "Steve – A Focusmate from Alumni AI",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": { "express": "^4.18.2" },
+  "engines": { "node": ">=18" }
+}
